@@ -1,0 +1,5 @@
+# macOS
+.DS_Store
+
+# We intentionally COMMIT lazy-lock.json (the plugin version lockfile) so every
+# machine gets identical plugin versions. Do not ignore it.
