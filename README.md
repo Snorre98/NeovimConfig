@@ -1,5 +1,11 @@
 # Neovim Config
 
+# TODO NOW
+
+- https://github.com/carderne/pi-nvim
+
+--------
+
 My portable Neovim setup. One repo, **two configs**, switchable per-launch:
 
 | Config       | Launch with                       | For                                   |

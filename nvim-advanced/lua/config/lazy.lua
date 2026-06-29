@@ -40,4 +40,7 @@ require("lazy").setup({
   -- Check for plugin updates in the background, but don't nag on every launch.
   checker = { enabled = true, notify = false },
   change_detection = { notify = false },
+  -- None of our plugins need luarocks; disabling it removes a noisy
+  -- :checkhealth error about a missing luarocks/hererocks install.
+  rocks = { enabled = false },
 })
