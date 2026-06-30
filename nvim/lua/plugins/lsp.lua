@@ -49,6 +49,38 @@ return {
         map("<leader>ca", vim.lsp.buf.code_action, "Code action")
         map("[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
         map("]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
+
+        -- Code Lens auto-refresh (e.g. markdown-oxide reference counts)
+        local function codelens_supported(bufnr)
+          for _, c in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+            if c.server_capabilities and c.server_capabilities.codeLensProvider then
+              return true
+            end
+          end
+          return false
+        end
+        if codelens_supported(event.buf) then
+          vim.lsp.codelens.refresh({ bufnr = event.buf })
+          vim.api.nvim_create_autocmd(
+            { "TextChanged", "InsertLeave", "CursorHold", "BufEnter" },
+            {
+              buffer = event.buf,
+              callback = function()
+                if codelens_supported(event.buf) then
+                  vim.lsp.codelens.refresh({ bufnr = event.buf })
+                end
+              end,
+            }
+          )
+        end
+
+        -- Daily note command for markdown-oxide
+        local client = vim.lsp.get_client_by_id(event.data.client_id)
+        if client and client.name == "markdown_oxide" then
+          pcall(vim.api.nvim_create_user_command, "Daily", function(args)
+            vim.lsp.buf.execute_command({ command = "jump", arguments = { args.args } })
+          end, { desc = "Open daily note", nargs = "*" })
+        end
       end,
     })
 
@@ -69,6 +101,22 @@ return {
       },
     })
 
+    -- 3b) markdown-oxide needs extra capabilities for dynamic file watching.
+    --     This merges with the nvim-lspconfig defaults (cmd, filetypes, root_markers).
+    vim.lsp.config("markdown_oxide", {
+      capabilities = vim.tbl_deep_extend(
+        "force",
+        require("blink.cmp").get_lsp_capabilities(),
+        {
+          workspace = {
+            didChangeWatchedFiles = {
+              dynamicRegistration = true,
+            },
+          },
+        }
+      ),
+    })
+
     -- 4) Which servers to install. mason-lspconfig downloads these and then
     --    auto-enables them (calls vim.lsp.enable) — no extra wiring needed.
     --    Names are nvim-lspconfig names; see :help lspconfig-all.
@@ -86,6 +134,7 @@ return {
         "rust_analyzer", -- Rust
         "clangd",        -- C / C++
         "yamlls",        -- YAML
+        "markdown_oxide",-- Markdown PKM (wiki-links, backlinks, daily notes)
         -- Java is NOT here: it needs the special nvim-jdtls launcher, which
         -- lives in the ADVANCED config. Here Java still gets syntax colours
         -- from treesitter, just no language-server features.
